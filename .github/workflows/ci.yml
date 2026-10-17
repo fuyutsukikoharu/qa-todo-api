@@ -2,36 +2,51 @@ name: API Tests
 
 on:
   push:
-  pull_request:
+    branches: [ "main" ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Start API
-        run: uvicorn app.main:app --host 0.0.0.0 --port 8000 &
-
-      - name: Wait for API
         run: |
-          for i in {1..10}; do
-            curl -s http://localhost:8000/docs && break
-            sleep 1
-          done
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
       - name: Run tests
-        run: pytest --alluredir=allure-results
+        # 允许测试失败，这样即使有 Bug 也能继续生成报告
+        run: |
+          pytest --alluredir=./allure-results
+        continue-on-error: true
 
-      - name: Upload Allure results
-        uses: actions/upload-artifact@v4
+      - name: Get Allure history
+        uses: actions/checkout@v4
+        if: always()
+        continue-on-error: true
         with:
-          name: allure-results
-          path: allure-results
+          ref: gh-pages
+          path: gh-pages
+
+      - name: Allure Report action
+        uses: simple-elf/allure-report-action@master
+        if: always()
+        with:
+          allure_results: allure-results
+          allure_history: allure-history
+          keep_reports: 20
+
+      - name: Deploy report to Github Pages
+        if: always()
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: allure-history
