@@ -21,7 +21,7 @@
 
 ---
 
-## 🛠 技术栈
+##  技术栈
 
 - **语言**：Python 3.11
 - **测试框架**：Pytest
@@ -30,6 +30,35 @@
 - **容器化**：Docker / Docker Compose
 - **CI/CD**：GitHub Actions
 - **目标服务**：FastAPI (Uvicorn)
+
+---
+
+##  快速开始
+
+### 方式一：使用 Docker (推荐，一键启动)
+无需本地配置 Python 环境，直接使用 Docker Compose 启动 API 服务并运行自动化测试：
+
+```bash
+docker compose up --build
+```
+
+*(注：测试运行结束后，Allure 原始结果将自动挂载到本地 `./allure-results` 目录。)*
+
+### 方式二：本地开发环境运行
+
+1. 安装依赖：
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. 启动后端服务：
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+3. 运行测试并生成报告：
+   ```bash
+   pytest --alluredir=./allure-results
+   allure serve allure-results
+   ```
 
 ---
 
@@ -51,3 +80,30 @@ qa-todo-api/
 ├── docker-compose.yml          # 容器编排 (API 服务 + 测试执行)
 ├── pytest.ini                  # Pytest 全局配置
 └── requirements.txt            # 依赖库
+```
+
+---
+
+##  核心测试设计 & Bug 记录
+
+本项目在测试用例设计上采用了多种黑盒测试方法：
+1. **等价类划分与边界值分析**：针对 `title` 字段测试了缺失、空字符串、纯空格、256 超长字符、特殊字符、非法数据类型等。
+2. **状态流转与异常处理**：测试获取、更新、删除不存在的 ID，验证系统是否正确返回 404。
+3. **安全与鉴权**：模拟无 Token、错误 Token 发起请求，验证后端是否拦截并返回 401。
+4. **幂等性验证**：连续发起相同的 PUT 更新和 DELETE 删除，验证系统数据状态是否一致，防止脏数据。
+
+###  发现的真实缺陷记录 (Bug Log)
+在构建自动化用例过程中，发现并复现了以下后端产品缺陷（已在测试代码中使用 `@pytest.mark.xfail` ）：
+- [ ] **鉴权失效**：无 Token 或错误 Token 时，依然能成功创建数据 (返回 201)。
+- [ ] **参数校验缺失**：传入空字符串 `""`、纯空格 `"   "` 或超长字符时，未进行拦截，直接写入数据库。
+
+---
+
+##  CI/CD 流程
+
+每次将代码 Push 到 `main` 分支时，GitHub Actions 会自动触发以下流程：
+1. 检出代码并配置 Python 3.11 环境。
+2. 安装依赖并后台启动 FastAPI 服务。
+3. 使用 `curl` 轮询等待服务健康就绪。
+4. 执行全量 Pytest 测试用例。
+5. 生成 Allure 报告并自动发布到 `gh-pages` 分支（即顶部的在线报告链接）。
