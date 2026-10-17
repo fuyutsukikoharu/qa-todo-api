@@ -8,20 +8,14 @@ class TestBoundary:
 
     @pytest.mark.parametrize("payload, desc", [
         ({"completed": False}, "缺失 title"),
-        ({"title": ""}, "title 为空字符串"),
-        ({"title": "   "}, "title 为纯空格"),
+        # 使用 pytest.param 精准标记这三个已知Bug，不影响其他正常用例
+        pytest.param({"title": ""}, "title 为空字符串", marks=pytest.mark.xfail(reason="已知后端Bug")),
+        pytest.param({"title": "   "}, "title 为纯空格", marks=pytest.mark.xfail(reason="已知后端Bug")),
         ({"title": None}, "title 为 null"),
         ({"title": 12345}, "title 为整数类型"),
         ({"title": True}, "title 为布尔类型"),
         ({"title": ["数组"]}, "title 为数组类型"),
         ({}, "请求体完全为空"),
-    ])
-    @pytest.mark.xfail(reason="已知后端Bug：未校验空字符串、纯空格和特殊字符")
-    @pytest.mark.parametrize("payload, desc", [
-        ({"completed": False}, "缺失 title"),
-        ({"title": ""}, "title 为空字符串"),  # 这个会失败
-        ({"title": "   "}, "title 为纯空格"),  # 这个会失败
-        # ... 其他参数 ...
     ])
     def test_create_todo_invalid_title(self, api_client, base_url, auth_headers, payload, desc):
         """验证非法参数，预期返回 400 或 422"""
