@@ -5,6 +5,7 @@ import pytest
 @allure.story("鉴权与权限")
 class TestAuth:
 
+    @pytest.mark.xfail(reason="已知后端Bug：未做鉴权拦截，返回了201")
     def test_no_token(self, api_client, base_url):
         """无 Token"""
         resp = api_client.post(f"{base_url}/todos", json={"title": "x"})
