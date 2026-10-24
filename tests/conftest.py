@@ -23,14 +23,7 @@ def created_todo(api_client, base_url):
     yield todo
     api_client.delete(f"{base_url}/todos/{todo['id']}")
 
-import os
-import pytest
-import requests
 
-BASE_URL = os.getenv("BASE_URL", "http://localhost:8000")
-TOKEN = os.getenv("API_TOKEN", "test-token")
-
-# 1. 建议增加一个 base_url 的 fixture，因为你的测试用例里用的是 base_url 参数
 @pytest.fixture(scope="session")
 def base_url():
     return BASE_URL
@@ -51,5 +44,5 @@ def api_client():
 
 @pytest.fixture(scope="session")
 def auth_headers():
-    # 这里返回你的 Token 头
+    # 这里返回 Token 头
     return {"Authorization": f"Bearer {TOKEN}"}
